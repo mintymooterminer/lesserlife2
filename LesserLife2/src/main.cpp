@@ -6,8 +6,8 @@ int main()
 {
 	SimulationParameters params;
 	params.numberOfPoints = 1000;
-	params.screenWidth = 1920;
-	params.screenHeight = 1080;
+	params.screenWidth = 1366;
+	params.screenHeight = 768;
 	params.gridFactor = 32;
 	params.game_area_size_factor =4;
 	params.numberOfPoints = 4500;
