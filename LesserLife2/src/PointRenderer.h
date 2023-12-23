@@ -1,0 +1,461 @@
+#include <SDL2/SDL.h>
+#include "Point.h"
+#include <iostream>
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_sdl2.h"
+#include "imgui/imgui_impl_sdlrenderer2.h"
+#include "imgui_sdl.h"
+
+struct SimulationParameters {
+    double game_area_size_factor;
+    int numberOfPoints;
+    int screenWidth;
+    int screenHeight;
+    int gridFactor;
+    float frictionFactor;
+    float soften;
+    float amplify;
+    float timeStep;
+    float beta;
+    int numColors;
+    float bounceAmount;
+    double min_interact_distance;
+    int size;
+    double mass;
+    int pointSize;
+};
+
+class PointRenderer
+{
+public:
+	double timestep = 0;
+	bool randomPressed	= false;
+private:
+	SDL_Window* window;
+	SDL_Renderer* renderer;
+
+	SDL_Window* guiwindow;
+		SDL_Renderer* guirenderer;
+	int screenWidth;
+	int screenHeight;
+	SimulationParameters* simParams;
+	bool running = true;
+	float zoom = 1;
+	int offset_x = 0;
+	int offset_y = 0;
+
+
+	bool isMiddleMousePressed = false;
+	bool isRightMousePressed = false;
+	int initialMouseX = 0; // Initial X when middle mouse was pressed
+	int initialMouseY = 0; // Initial Y when middle mouse was pressed
+	int initialZoomMouseX = 0;
+	int initialZoomMouseY = 0;
+
+	std::vector<SDL_Texture*> textureCache;
+	const std::vector<SDL_Color> colors = {
+			{255, 255, 255, 255},   // "#ffffff"
+			{159, 78, 68, 255},     // "#9f4e44"
+			{203, 126, 117, 255},   // "#cb7e75"
+			{109, 84, 18, 255},     // "#6d5412"
+			{161, 104, 60, 255},    // "#a1683c"
+			{201, 212, 135, 255},   // "#c9d487"
+			{154, 226, 155, 255},   // "#9ae29b"
+			{90, 171, 94, 255},     // "#5cab5e"
+			{106, 191, 198, 255},   // "#6abfc6"
+			{136, 126, 203, 255},   // "#887ecb"
+			{80, 69, 155, 255},     // "#50459b"
+			{160, 87, 163, 255}     // "#a057a3"
+	};
+public:
+	float timeStep = 1;
+	int mouseX = -1;
+	int mouseY = -1;
+	int key = 1;
+	PointRenderer(int width, int height, SimulationParameters* params)
+	: screenWidth(width), screenHeight(height), simParams(params)
+	{
+		SDL_Init(SDL_INIT_VIDEO);
+
+		// Create window
+		window = SDL_CreateWindow("Point Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,screenWidth, screenHeight, SDL_WINDOW_SHOWN);
+
+		if (window == nullptr)
+		{
+			SDL_Log("Failed to create window: %s", SDL_GetError());
+			return;
+		}
+
+		// Create renderer
+		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+		if (renderer == nullptr)
+		{
+			SDL_Log("Failed to create renderer: %s", SDL_GetError());
+			return;
+		}
+
+		IMGUI_CHECKVERSION();
+		ImGuiContext* tmp = ImGui::CreateContext();
+		ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+        ImGui::StyleColorsDark();
+        // After initializing SDL and creating SDL_Renderer
+        ImGuiSDL::Initialize(renderer, screenWidth, screenHeight);
+	}
+
+	~PointRenderer()
+	{
+		//TODO: do this in simulation
+		//for (auto& p : points)
+		//{
+		//    SDL_DestroyTexture(p.texture);
+		//}
+		SDL_DestroyRenderer(renderer);
+		SDL_DestroyWindow(window);
+		SDL_Quit();
+	}
+
+	void optimisePoints(std::vector<Point>& points) {
+		for (auto& p : points) {
+			if(!p.isOptimised){
+				p.color = this->colors[p.color_index];
+
+				if (textureCache.size() > p.color_index && textureCache[p.color_index] != nullptr) {
+					p.texture = textureCache[p.color_index];
+				} else {
+					int sf = 32;
+					// Create an SDL_Surface for the point
+					SDL_Surface* surface = SDL_CreateRGBSurface(0, p.size * sf, p.size * sf, 32,
+							0xFF000000, // Alpha mask
+							0x00FF0000, // Red mask
+							0x0000FF00, // Green mask
+							0x000000FF); // Blue mask
+
+					// Transparency value, ranging from 0 (fully transparent) to 255 (fully opaque)
+					Uint8 transparencyValue = 200; // You can adjust this value
+
+					// Get the color in the correct format, with alpha channel
+					Uint32 sdl_color = SDL_MapRGBA(surface->format, p.color.r, p.color.g, p.color.b, transparencyValue);
+
+					Uint32 sdl_transparent = SDL_MapRGBA(surface->format, 0, 0, 0, 0x00); // Transparent
+
+					// Fill the surface with transparent color
+					SDL_FillRect(surface, nullptr, sdl_transparent);
+
+					int radius = p.size;
+					int diameter = radius * sf;
+					for (int y = 0; y < diameter; y++) {
+						for (int x = 0; x < diameter; x++) {
+							int dx = radius - x;
+							int dy = radius - y;
+							if (dx*dx + dy*dy <= radius*radius) {
+								((Uint32*)surface->pixels)[(y * surface->w) + x] = sdl_color;
+							}
+						}
+					}
+					// Convert the surface to a texture
+					p.texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+					// Resize textureCache if needed and store the texture
+					if (textureCache.size() <= p.color_index) {
+						textureCache.resize(p.color_index + 1, nullptr);
+					}
+					textureCache[p.color_index] = p.texture;
+
+					// Clean up the surface
+					SDL_FreeSurface(surface);
+				}
+
+				p.isOptimised = true;
+			}
+		}
+	}
+
+	void updateGUI()
+	{
+	    // Start the ImGui frame
+	    ImGui_ImplSDL2_NewFrame(window);
+	    ImGui::NewFrame();
+
+	    // Here you can create your GUI
+	    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
+		ImGui::Begin("Control Panel");
+
+	    //ImGui::SliderInt("Time Step", 0, 0, 100);
+	    ImGui::SliderFloat("Time Step", &simParams->timeStep, 0.0, 0.01);
+	    //double game_area_size_factor;
+	    //int numberOfPoints;
+	    //int screenWidth;
+	    //int screenHeight;
+	    //int gridFactor;
+	    ImGui::SliderFloat("Friction", &simParams->frictionFactor, 0.0, 1.0);
+	    //float soften;
+	    ImGui::SliderFloat("Amplify", &simParams->amplify, -1000, 1000);
+	    //float timeStep;
+	    ImGui::SliderFloat("Beta", &simParams->beta, -1.0, 1.0);
+	    //int numColors;
+	    //float bounceAmount;
+	    ImGui::SliderFloat("Bounce Amount", &simParams->bounceAmount, 0.0, 1.0);
+	    //double min_interact_distance;
+	    //int size;
+	    //double mass;
+	    //int pointSize;
+	    ImGui::SliderFloat("Soften", &simParams->soften, -10.0, 10.0);
+	    randomPressed = false;
+	    // Add a button
+		if (ImGui::Button("Randomize")) {
+		   // Event handler code here
+		   // This block runs when the button is pressed
+		   // You can add code here to apply changes, reset parameters, etc.
+		//   handleRandomizeButtonPress(simParams); // Example function call
+			randomPressed = true;
+		}
+	    // ... Add more controls as needed
+	    ImGui::End();
+
+	    // Rendering
+	    ImGui::Render();
+	    ImGuiSDL::Render(ImGui::GetDrawData());
+	}
+
+	void handleRandomizeButtonPress(SimulationParameters* params) {
+	    // Example event handler function
+	    // Update or apply changes to the simulation parameters
+	    // This is where you put the logic that happens when the button is pressedl
+	}
+
+	void renderPoints(const std::vector<Point>& points, int scale, int bx, int by)
+	{
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set background color to black
+		SDL_RenderClear(renderer);
+
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Set point color to white
+		for (const auto& p : points)
+		{
+			//point.draw(renderer, scale, bx, by);
+			//SDL_Color c = this->colors[p.color_index];
+			/*
+			SDL_Color c = p.color;
+			SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
+
+			// Calculate radius based on size
+			int radius = p.size*zoom;
+			int tmpx = ((p.x+bx)/scale)*zoom + offset_x;
+			int tmpy = ((p.y+by)/scale)*zoom + offset_y;
+			// Draw filled circle
+			for (int dy = -radius; dy <= radius; dy++)
+			{
+				for (int dx = -radius; dx <= radius; dx++)
+				{
+					if (dx * dx + dy * dy <= radius * radius)
+					{
+						SDL_RenderDrawPoint(renderer, (tmpx + dx) ,
+													  (tmpy + dy));
+					}
+				}
+			}
+			*/
+
+			SDL_Rect rect;
+			rect.x = (int)((p.x+bx)/scale - p.size);
+			rect.y = (int)((p.y+by)/scale - p.size);
+			//rect.x = (int)((p.x)/scale - p.size);
+			//rect.y = (int)((p.y)/scale - p.size);
+			rect.w = (int)(p.size * 16 * zoom);
+			rect.h = (int)(p.size * 16 * zoom);
+
+			if(rect.w <= 0){
+				rect.w = 1;
+			}
+
+			// zoom
+			rect.x = (int)(rect.x*zoom) + offset_x;
+			rect.y = (int)(rect.y*zoom) + offset_y;
+
+
+			// Render the point's texture
+			SDL_RenderCopy(renderer, p.texture, NULL, &rect);
+
+		}
+		updateGUI();
+
+		SDL_RenderPresent(renderer);
+	}
+
+	bool isWindowOpenAndSetKey()
+	{
+		double worldMouseX;
+		double worldMouseY;
+		double newScreenMouseX;
+		double newScreenMouseY;
+		int windowWidth = screenWidth;  // Your window's width
+		int windowHeight = screenWidth; // Your window's height
+
+		// This is the point which we'll keep stationary during zooming
+		int centerX = windowWidth / 2;
+		int centerY = windowHeight / 2;
+
+		// Convert that point from screen coordinates to world coordinates
+		double worldCenterX = (centerX - offset_x) / zoom;
+		double worldCenterY = (centerY - offset_y) / zoom;
+
+		mouseX = -1;
+		mouseY = -1;
+		SDL_Event e;
+		while (SDL_PollEvent(&e))
+		{
+			ImGui_ImplSDL2_ProcessEvent(&e);
+
+			switch (e.type) {
+				case SDL_QUIT:
+					return false;
+				break;
+				case (SDL_MOUSEWHEEL):{
+				    // Convert mouse screen position to world position (before zooming)
+				    double worldMouseXBeforeZoom = e.motion.x / zoom + offset_x;
+				    double worldMouseYBeforeZoom = e.motion.y / zoom + offset_y;
+
+				    // Adjust zoom based on wheel direction
+				    if (e.wheel.y > 0) {
+				        zoom *= 1.05;  // Increase zoom by 5%
+				    } else if (e.wheel.y < 0) {
+				        zoom /= 1.05;  // Decrease zoom by 5%
+				    }
+
+				    // Convert the mouse screen position to the world position again (after zooming)
+				    double worldMouseXAfterZoom = e.motion.x / zoom + offset_x;
+				    double worldMouseYAfterZoom = e.motion.y / zoom + offset_y;
+
+				    // Adjust the offsets to make sure the world position of the mouse stays the same after zooming
+				    offset_x += worldMouseXBeforeZoom - worldMouseXAfterZoom;
+				    offset_y += worldMouseYBeforeZoom - worldMouseYAfterZoom;
+				break;
+				}
+				case SDL_MOUSEBUTTONDOWN:
+					if (e.button.button == SDL_BUTTON_MIDDLE) {
+						isMiddleMousePressed = true;
+						initialMouseX = e.button.x;
+						initialMouseY = e.button.y;
+					}
+					if (e.button.button == SDL_BUTTON_RIGHT) {
+						isRightMousePressed = true;
+						initialMouseY = e.button.y; // Only Y is needed for zoom
+
+						initialZoomMouseX = e.button.x;
+						initialZoomMouseY = e.button.y;
+					}
+					if(e.button.button == SDL_BUTTON_LEFT){
+						mouseX = e.button.x;
+						mouseY = e.button.y;
+					}
+					break;
+				case SDL_MOUSEBUTTONUP:
+					if (e.button.button == SDL_BUTTON_MIDDLE) {
+						isMiddleMousePressed = false;
+					}
+					if (e.button.button == SDL_BUTTON_RIGHT) {
+						isRightMousePressed = false;
+					}
+					break;
+				case SDL_MOUSEMOTION:
+					if (isMiddleMousePressed) {
+						// Assuming you want 1-to-1 mouse movement to pan ratio.
+						offset_x += (e.motion.x - initialMouseX);
+						offset_y += (e.motion.y - initialMouseY);
+						initialMouseX = e.motion.x;
+						initialMouseY = e.motion.y;
+					}
+					if (isRightMousePressed) {
+						// World coordinates of the mouse before zoom
+						//double worldMouseX = (e.motion.x - offset_x) / zoom;
+						//double worldMouseY = (e.motion.y - offset_y) / zoom;
+
+						double worldMouseX = (initialZoomMouseX - offset_x) / zoom;
+						double worldMouseY = (initialZoomMouseY - offset_y) / zoom;
+
+
+						// Apply zoom
+						//int deltaY = e.motion.y - initialMouseY;
+						int deltaY = e.motion.y - initialZoomMouseY;
+						zoom += 0.0001 * deltaY;
+						if (zoom <= 0.0001) zoom = 0.0001;
+
+						// New screen coordinates after zoom
+						double newScreenMouseX = worldMouseX * zoom + offset_x;
+						double newScreenMouseY = worldMouseY * zoom + offset_y;
+
+						// Adjust offsets to keep the mouse point anchored
+						//offset_x += e.motion.x - newScreenMouseX;
+						//offset_y += e.motion.y - newScreenMouseY;
+
+						// Adjust offsets to keep the initial zoom point anchored
+						offset_x += initialZoomMouseX - newScreenMouseX;
+						offset_y += initialZoomMouseY - newScreenMouseY;
+
+						initialMouseY = e.motion.y; // Reset the starting point for continuous zooming
+					}
+
+					break;
+				case SDL_KEYDOWN:
+					switch (e.key.keysym.sym)
+					{
+					case SDLK_1:
+						key = 1;
+						break;
+					case SDLK_2:
+						key = 2;
+						break;
+					case SDLK_3:
+						key = 3;
+						break;
+					case SDLK_4:
+						key = 4;
+						break;
+					case SDLK_5:
+						key = 5;
+						break;
+					case SDLK_6:
+						key = 6;
+						break;
+					case SDLK_7:
+						key = 7;
+						break;
+					case SDLK_8:
+						key = 8;
+						break;
+					case SDLK_9:
+						key = 9;
+						break;
+					case SDLK_UP:
+						//offset_y+=10;
+						timestep += 0.01;
+						break;
+					case SDLK_DOWN:
+						timestep -= 0.0001;
+						//offset_y-=10;
+						break;
+					case SDLK_LEFT:
+						offset_x+=10;
+						break;
+					case SDLK_RIGHT:
+						offset_x-=10;
+						break;
+					case SDLK_PAGEUP:
+						zoom += 0.01;
+						// After adjusting the zoom, re-center:
+						offset_x = centerX - worldCenterX * zoom;
+						offset_y = centerY - worldCenterY * zoom;
+						break;
+					case SDLK_PAGEDOWN:
+						zoom -= 0.01;
+						if (zoom <= 0.01) zoom = 0.01; // Ensure zoom doesn't go too small or negative.
+						// After adjusting the zoom, re-center:
+						offset_x = centerX - worldCenterX * zoom;
+						offset_y = centerY - worldCenterY * zoom;
+						break;
+					}
+				    break;
+			}
+		}
+		return true;
+	}
+};
