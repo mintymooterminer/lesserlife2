@@ -25,6 +25,7 @@ struct SimulationParameters {
     int pointSize;
     std::vector<std::vector<float>> colorAttractions;
     bool applyRequired = false;
+    int paletteIndex = 1;
 };
 
 class PointRenderer
@@ -44,7 +45,6 @@ private:
 	int offset_x = 0;
 	int offset_y = 0;
 
-
 	bool isMiddleMousePressed = false;
 	bool isRightMousePressed = false;
 	int initialMouseX = 0; // Initial X when middle mouse was pressed
@@ -53,20 +53,117 @@ private:
 	int initialZoomMouseY = 0;
 
 	std::vector<SDL_Texture*> textureCache;
-	const std::vector<SDL_Color> colors = {
-			{255, 255, 255, 255},   // "#ffffff"
-			{159, 78, 68, 255},     // "#9f4e44"
-			{203, 126, 117, 255},   // "#cb7e75"
-			{109, 84, 18, 255},     // "#6d5412"
-			{161, 104, 60, 255},    // "#a1683c"
-			{201, 212, 135, 255},   // "#c9d487"
-			{154, 226, 155, 255},   // "#9ae29b"
-			{90, 171, 94, 255},     // "#5cab5e"
-			{106, 191, 198, 255},   // "#6abfc6"
-			{136, 126, 203, 255},   // "#887ecb"
-			{80, 69, 155, 255},     // "#50459b"
-			{160, 87, 163, 255}     // "#a057a3"
+	std::vector<SDL_Color> originalPalette = {
+	    {255, 255, 255, 255},   // White
+	    {159, 78, 68, 255},     // Dark Reddish
+	    {203, 126, 117, 255},   // Light Reddish
+	    {109, 84, 18, 255},     // Dark Yellowish
+	    {161, 104, 60, 255},    // Brownish
+	    {201, 212, 135, 255},   // Light Yellowish
+	    {154, 226, 155, 255},   // Light Green
+	    {90, 171, 94, 255},     // Dark Green
+	    {106, 191, 198, 255},   // Cyan
+	    {136, 126, 203, 255},   // Light Blue
+	    {80, 69, 155, 255},     // Dark Blue
+	    {160, 87, 163, 255},    // Purple
+	    {123, 104, 238, 255},   // Medium Slate Blue
+	    {0, 191, 255, 255},     // Deep Sky Blue
+	    {255, 105, 180, 255}    // Hot Pink
 	};
+	std::vector<SDL_Color> rainbowPalette = {
+	    {255, 0, 0, 255},       // Red
+	    {255, 85, 0, 255},      // Red-Orange
+	    {255, 170, 0, 255},     // Orange
+	    {255, 255, 0, 255},     // Yellow
+	    {170, 255, 0, 255},     // Yellow-Green
+	    {85, 255, 0, 255},      // Green-Yellow
+	    {0, 255, 0, 255},       // Green
+	    {0, 255, 85, 255},      // Green-Cyan
+	    {0, 255, 170, 255},     // Cyan-Green
+	    {0, 255, 255, 255},     // Cyan
+	    {0, 170, 255, 255},     // Cyan-Blue
+	    {0, 85, 255, 255},      // Blue-Cyan
+	    {0, 0, 255, 255},       // Blue
+	    {85, 0, 255, 255},      // Blue-Magenta
+	    {170, 0, 255, 255}      // Magenta-Blue
+	};
+	std::vector<SDL_Color> grayscalePalette = {
+	    {0, 0, 0, 255},         // Black
+	    {17, 17, 17, 255},      // Very Dark Gray
+	    {34, 34, 34, 255},
+	    {51, 51, 51, 255},
+	    {68, 68, 68, 255},
+	    {85, 85, 85, 255},
+	    {102, 102, 102, 255},
+	    {119, 119, 119, 255},
+	    {136, 136, 136, 255},
+	    {153, 153, 153, 255},
+	    {170, 170, 170, 255},
+	    {187, 187, 187, 255},
+	    {204, 204, 204, 255},
+	    {221, 221, 221, 255},
+	    {238, 238, 238, 255},   // Very Light Gray
+	    {255, 255, 255, 255}    // White
+	};
+	std::vector<std::vector<SDL_Color>> colorPalettes = {
+	    // Original Palette
+	    {
+	        {255, 255, 255, 255},
+	        {159, 78, 68, 255},
+	        {203, 126, 117, 255},
+	        {109, 84, 18, 255},
+	        {161, 104, 60, 255},
+	        {201, 212, 135, 255},
+	        {154, 226, 155, 255},
+	        {90, 171, 94, 255},
+	        {106, 191, 198, 255},
+	        {136, 126, 203, 255},
+	        {80, 69, 155, 255},
+	        {160, 87, 163, 255},
+	        {123, 104, 238, 255},
+	        {0, 191, 255, 255},
+	        {255, 105, 180, 255}
+	    },
+	    // Rainbow Palette
+	    {
+	        {255, 0, 0, 255},
+	        {255, 85, 0, 255},
+	        {255, 170, 0, 255},
+	        {255, 255, 0, 255},
+	        {170, 255, 0, 255},
+	        {85, 255, 0, 255},
+	        {0, 255, 0, 255},
+	        {0, 255, 85, 255},
+	        {0, 255, 170, 255},
+	        {0, 255, 255, 255},
+	        {0, 170, 255, 255},
+	        {0, 85, 255, 255},
+	        {0, 0, 255, 255},
+	        {85, 0, 255, 255},
+	        {170, 0, 255, 255}
+	    },
+	    // Grayscale Fade Palette
+	    {
+	        {0, 0, 0, 255},
+	        {17, 17, 17, 255},
+	        {34, 34, 34, 255},
+	        {51, 51, 51, 255},
+	        {68, 68, 68, 255},
+	        {85, 85, 85, 255},
+	        {102, 102, 102, 255},
+	        {119, 119, 119, 255},
+	        {136, 136, 136, 255},
+	        {153, 153, 153, 255},
+	        {170, 170, 170, 255},
+	        {187, 187, 187, 255},
+	        {204, 204, 204, 255},
+	        {221, 221, 221, 255},
+	        {238, 238, 238, 255},
+	        {255, 255, 255, 255}
+	    }
+	    // Add other palettes here if needed
+	};
+
 public:
 	float timeStep = 1;
 	int mouseX = -1;
@@ -117,8 +214,9 @@ public:
 	void optimisePoints(std::vector<Point>& points) {
 		for (auto& p : points) {
 			if(!p.isOptimised){
-				p.color = this->colors[p.color_index];
+				//p.color = this->colors[p.color_index];
 
+				p.color = colorPalettes[simParams->paletteIndex][p.color_index];
 				if (textureCache.size() > p.color_index && textureCache[p.color_index] != nullptr) {
 					p.texture = textureCache[p.color_index];
 				} else {
@@ -208,7 +306,7 @@ public:
 	    ImGui::SliderFloat("Soften", &simParams->soften, -10.0, 10.0);
 	    int originalNumberOfPoints = simParams->numberOfPoints;
 	    bool hasChanged = false;
-	    if (ImGui::SliderInt("Number of Points", &simParams->numberOfPoints, 1, 5000)) {
+	    if (ImGui::SliderInt("Number of Points", &simParams->numberOfPoints, 1, 15000)) {
 	            // This block is executed when the slider value changes
 	            // You can implement additional logic here if needed
 	    	//simParams->applyRequired = true;
@@ -225,6 +323,11 @@ public:
 
 		if(hasChanged){
 			simParams->applyRequired = true;
+		}
+
+		if (ImGui::SliderInt("Palette Index", &simParams->paletteIndex, 0, colorPalettes.size() - 1)) {
+		    // Update the palette
+		    //updatePalette();
 		}
 
 		// Apply button - only enabled if numberOfPoints has changed
