@@ -49,7 +49,7 @@ private:
 
 
     std::vector<Point> points;
-    std::vector<std::vector<float>> colorAttractions;
+    //std::vector<std::vector<float>> colorAttractions;
     PointRenderer& pointRenderer;
 
     void organisePointsInGrid();

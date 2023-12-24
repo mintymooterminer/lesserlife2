@@ -40,11 +40,11 @@ Simulation::Simulation(int width, int height, SimulationParameters* params, Poin
     std::uniform_int_distribution<int> velDist(-1000, 1000);
     std::uniform_int_distribution<int> colorDist(0, simParams->numColors - 1);
 
-    colorAttractions.resize(simParams->numColors);
+    simParams->colorAttractions.resize(simParams->numColors);
     for (int i = 0; i < simParams->numColors; ++i){
-    	colorAttractions[i].resize(simParams->numColors);
+    	simParams->colorAttractions[i].resize(simParams->numColors);
     	for (int j = 0; j < simParams->numColors; ++j){
-    		colorAttractions[i][j] = velDist(gen)/1000.0 * 0.1255;
+    		simParams->colorAttractions[i][j] = velDist(gen)/1000.0 * 0.1255;
     	}
     }
 
@@ -52,7 +52,7 @@ Simulation::Simulation(int width, int height, SimulationParameters* params, Poin
 
     for(int i = 0; i < simParams->numColors; ++i) {
         for(int j = 0; j < simParams->numColors; ++j) {
-            std::cout << colorAttractions[i][j] << " ";
+            std::cout << simParams->colorAttractions[i][j] << " ";
         }
         std::cout << std::endl;
     }
@@ -88,10 +88,9 @@ void Simulation::randomizeAttractions(){
 	std::cout << simParams->beta << std::endl;
     for (int i = 0; i < simParams->numColors; ++i){
     	for (int j = 0; j < simParams->numColors; ++j){
-    		colorAttractions[i][j] = velDist(gen)/1000.0 * 0.1255;
+    		simParams->colorAttractions[i][j] = velDist(gen)/1000.0 * 0.1255;
     	}
     }
-
 }
 
 void Simulation::configureChasingBehavior(int numColors)
@@ -101,34 +100,34 @@ void Simulation::configureChasingBehavior(int numColors)
         for (int j = 0; j < numColors; ++j)
         {
             // Default to -0.2 for all attractions
-            colorAttractions[i][j] = 0.15;
+        	simParams->colorAttractions[i][j] = 0.15;
         }
 
         // Set self-repulsion to -1.8
-        colorAttractions[i][i] = -1.0;
+        simParams->colorAttractions[i][i] = -1.0;
 
         // Set attraction to the next color to 0.8
         if (i == numColors - 1)
         {
             // If this is the last color, it should chase the first color
-            colorAttractions[i][(i + 1) % numColors] = 1.00;
+        	simParams->colorAttractions[i][(i + 1) % numColors] = 1.00;
         }
         else
         {
             // Otherwise, chase the next color
-            colorAttractions[i][i + 1] = 1.0;
+        	simParams->colorAttractions[i][i + 1] = 1.0;
         }
 
         // Set repulsion from the previous color to -0.4
         if (i == 0)
         {
             // If this is the first color, repel from the last color
-            colorAttractions[i][(i - 1 + numColors) % numColors] = -0.754;
+        	simParams->colorAttractions[i][(i - 1 + numColors) % numColors] = -0.754;
         }
         else
         {
             // Otherwise, repel from the previous color
-            colorAttractions[i][i - 1] = -0.754;
+        	simParams->colorAttractions[i][i - 1] = -0.754;
         }
     }
 }
@@ -375,7 +374,7 @@ float tempDistance = distance;
         }
 
         // Calculate attraction based on color indices
-        float attraction = colorAttractions[point.color_index][otherPoint.color_index];
+        float attraction = simParams->colorAttractions[point.color_index][otherPoint.color_index];
 
 
 		float normalisedDistance = distance / simParams->min_interact_distance;

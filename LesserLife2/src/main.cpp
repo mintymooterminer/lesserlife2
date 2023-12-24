@@ -17,7 +17,7 @@ int main()
 	params.amplify = 100.0;
 	params.timeStep = 0.0015555125425491;
 	params.beta = 0.541814362515;
-	params.numColors = 15;
+	params.numColors = 8;
 	params.bounceAmount = 0.999599998495;
 	params.min_interact_distance = 80;
 	params.size = 4;
