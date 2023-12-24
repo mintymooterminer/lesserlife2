@@ -7,15 +7,6 @@ Simulation::Simulation(int width, int height, SimulationParameters* params, Poin
 	cellSizeX(static_cast<int>(width * params->game_area_size_factor / params->gridFactor + 0.0)),
     cellSizeY(static_cast<int>(height * params->game_area_size_factor / params->gridFactor + 0.0)),
     grid(std::make_unique<Grid>(cellSizeX, cellSizeY)) {
-//}
-
-//Simulation::Simulation(int numPoints, int _numColors, int width, int height, int _gridFactor, float _beta, float friction, float minDist, float _soften,  float _amplify, float _timeStep, float _bounceAmount, int size, float mass, float areaFactor, PointRenderer& renderer)
-//: screenWidth(width), screenHeight(height), gridFactor(_gridFactor), numberOfPoints(numPoints), beta(_beta), frictionFactor(friction), min_interact_distance(minDist), soften(_soften), amplify(_amplify), timeStep(_timeStep), bounceAmount(_bounceAmount),
-//  pointSize(size), pointMass(mass), Simulation_area_size_factor(areaFactor), pointRenderer(renderer),
-//  cellSizeX(static_cast<int>(width * areaFactor / _gridFactor + 0.0)),
-//  cellSizeY(static_cast<int>(height * areaFactor / _gridFactor + 0.0)),
-//  grid(std::make_unique<Grid>(cellSizeX, cellSizeY))  {
-
 	frameCounter = 0;
 	area_w = screenWidth*simParams->game_area_size_factor;
 	area_h = screenHeight*simParams->game_area_size_factor;
@@ -31,8 +22,7 @@ Simulation::Simulation(int width, int height, SimulationParameters* params, Poin
 	ay = 0;
 	by = area_h;
 */
-	//const int numColors = 2;
-	//numColors = _numColors;
+
 	std::random_device rd;
 	std::mt19937 gen(rd());
     std::uniform_int_distribution<int> posxDist(0, area_w);
@@ -78,20 +68,7 @@ Simulation::Simulation(int width, int height, SimulationParameters* params, Poin
    //rganisePointsInGrid();
 }
 
-void Simulation::randomizeAttractions(){
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> velDist(-1000, 1000);
-	std::uniform_int_distribution<int> betaDist(30, 80);
-	simParams->beta = betaDist(gen)/100;
-	simParams->beta = 0.3;
-	std::cout << simParams->beta << std::endl;
-    for (int i = 0; i < simParams->numColors; ++i){
-    	for (int j = 0; j < simParams->numColors; ++j){
-    		simParams->colorAttractions[i][j] = velDist(gen)/1000.0 * 0.1255;
-    	}
-    }
-}
+
 
 void Simulation::configureChasingBehavior(int numColors)
 {
@@ -152,7 +129,25 @@ void Simulation::updateEvents() {
 
 		std::cout << "cREATING POINT AT SIMx: " << simX << " AND SIMy: " << simY << std::endl;
 	    //addPointAtMousePosition(simX, simY);
-		randomizeAttractions();
+		//randomizeAttractions();
+		//for std::vector<Point> points
+
+		std::random_device rd;
+		std::mt19937 gen(rd());
+	    std::uniform_int_distribution<int> posxDist(0, area_w);
+	    std::uniform_int_distribution<int> posyDist(0, area_h);
+	    std::uniform_int_distribution<int> velDist(-1000, 1000);
+	    for (int i = 0; i < simParams->numberOfPoints; ++i)
+		{
+			// Randomly assign a color index to each point
+			//int colorIndex = colorDist(gen);
+			int xPos = posxDist(gen);
+			int yPos = posyDist(gen);
+			//points.emplace_back(colorIndex, xPos + ax, yPos + ay, velocityX, velocityY, simParams->pointSize, 1.0);
+			points[i].x = xPos;
+			points[i].y = yPos;
+		 }
+
 	}
 }
 
@@ -443,7 +438,7 @@ void Simulation::controlFrameRate(const std::chrono::high_resolution_clock::time
 	if (frameCounter % 60 == 0){
 		std::cout << "FPS: " << fps << std::endl;
 		if(fps < 30){
-			randomizeAttractions();
+			//randomizeAttractions();
 		}
 	}
 }

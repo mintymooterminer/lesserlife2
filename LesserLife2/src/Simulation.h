@@ -30,26 +30,12 @@ private:
 
 	int area_w;
 	int area_h;
-//	int gridFactor = 1;
-//	float frictionFactor;
-//	float beta;
-//	float min_interact_distance;
-//	float soften;
-//	float amplify;
-//	float timeStep;
-//	float bounceAmount;
-//	int pointSize;
-//	float pointMass;
-//	float Simulation_area_size_factor;
-//	int numColors;
 	float ax;
 	float bx;
 	float ay;
 	float by;
 
-
     std::vector<Point> points;
-    //std::vector<std::vector<float>> colorAttractions;
     PointRenderer& pointRenderer;
 
     void organisePointsInGrid();
@@ -63,5 +49,4 @@ private:
     void updateEvents();
     double mapMouseXtoSimulationX(int mouseX);
     double mapMouseYtoSimulationY(int mouseY);
-    void randomizeAttractions();
 };

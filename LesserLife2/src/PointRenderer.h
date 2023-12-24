@@ -185,7 +185,8 @@ public:
 		ImGui::Begin("Control Panel");
 
 	    //ImGui::SliderInt("Time Step", 0, 0, 100);
-	    ImGui::SliderFloat("Time Step", &simParams->timeStep, 0.0, 0.01);
+		ImGui::SliderFloat("Time Step", &simParams->timeStep, 0.0f, 0.01f, "%0.4f");
+
 	    //double game_area_size_factor;
 	    //int numberOfPoints;
 	    //int screenWidth;
@@ -204,72 +205,102 @@ public:
 	    //double mass;
 	    //int pointSize;
 	    ImGui::SliderFloat("Soften", &simParams->soften, -10.0, 10.0);
+	    int originalNumberOfPoints = simParams->numberOfPoints;
+	    bool hasChanged = false;
+	    if (ImGui::SliderInt("Number of Points", &simParams->numberOfPoints, 1, 5000)) {
+	            // This block is executed when the slider value changes
+	            // You can implement additional logic here if needed
+	    	hasChanged = true;
+		}
+
+		// Check if numberOfPoints has been modified
+		//bool hasChanged = simParams->numberOfPoints != originalNumberOfPoints;
+
+		// Apply button - only enabled if numberOfPoints has changed
+		if (!hasChanged) {
+			ImGui::BeginDisabled();
+		}
+
+		if (ImGui::Button("Apply")) {
+			// Handle the apply action
+			// For example, update the originalNumberOfPoints
+			//originalNumberOfPoints = simParams->numberOfPoints;
+			// Additional logic for applying the change can go here
+		}
+
+		if (!hasChanged) {
+			ImGui::EndDisabled();
+		}
+
+
 	    randomPressed = false;
 	    // Add a button
-		if (ImGui::Button("Randomize")) {
-		   // Event handler code here
-		   // This block runs when the button is pressed
-		   // You can add code here to apply changes, reset parameters, etc.
-		   handleRandomizeButtonPress(simParams); // Example function call
-		//	randomPressed = true;
-		}
+
 	    // ... Add more controls as needed
 	    ImGui::End();
 
 	    ImGui::Begin("Color Grid");
 
 	    ImVec4 colorPositive = ImVec4(0.0f, 1.0f, 0.0f, 1.0f); // Green
-	        ImVec4 colorNegative = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
-	        ImVec4 colorZero = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);     // Black
+		ImVec4 colorNegative = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
+		ImVec4 colorZero = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);     // Black
 
-	        const ImVec2 buttonSize = ImVec2(20.0f, 20.0f); // Adjust size as needed
+		const ImVec2 buttonSize = ImVec2(20.0f, 20.0f); // Adjust size as needed
 
-	        for (size_t i = 0; i < simParams->colorAttractions.size(); ++i) {
-	            for (size_t j = 0; j < simParams->colorAttractions[i].size(); ++j) {
-	                float value = simParams->colorAttractions[i][j];
-	                ImVec4 buttonColor;
+		for (size_t i = 0; i < simParams->colorAttractions.size(); ++i) {
+			for (size_t j = 0; j < simParams->colorAttractions[i].size(); ++j) {
+				float value = simParams->colorAttractions[i][j];
+				ImVec4 buttonColor;
 
-	                if (value > 0) {
-	                    // Positive: Shade of green based on value
-	                    float greenIntensity = std::min(value / maxValue, 1.0f);
-	                    buttonColor = ImVec4(colorPositive.x, colorPositive.y * greenIntensity, colorPositive.z, 1.0f);
-	                } else if (value < 0) {
-	                    // Negative: Shade of red based on value
-	                    float redIntensity = std::min(-value / maxValue, 1.0f);
-	                    buttonColor = ImVec4(colorNegative.x * redIntensity, colorNegative.y, colorNegative.z, 1.0f);
-	                } else {
-	                    // Zero: Black
-	                    buttonColor = colorZero;
-	                }
+				if (value > 0) {
+					// Positive: Shade of green based on value
+					float greenIntensity = std::min(value / maxValue, 1.0f);
+					buttonColor = ImVec4(colorPositive.x, colorPositive.y * greenIntensity, colorPositive.z, 1.0f);
+				} else if (value < 0) {
+					// Negative: Shade of red based on value
+					float redIntensity = std::min(-value / maxValue, 1.0f);
+					buttonColor = ImVec4(colorNegative.x * redIntensity, colorNegative.y, colorNegative.z, 1.0f);
+				} else {
+					// Zero: Black
+					buttonColor = colorZero;
+				}
 
-	                ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
-	                // Create the button
-	                           ImGui::Button(("##" + std::to_string(i) + std::to_string(j)).c_str(), buttonSize);
+				ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
+				// Create the button
+				ImGui::Button(("##" + std::to_string(i) + std::to_string(j)).c_str(), buttonSize);
 
-	                           // Check for mouse clicks on the button
-	                           if (ImGui::IsItemHovered()) {
-	                               if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-	                                   // Left click - increase value, but not above maxValue
-	                                   simParams->colorAttractions[i][j] = std::min(simParams->colorAttractions[i][j] + 0.1f, maxValue);
-	                               }
-	                               if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-	                                   // Right click - decrease value, but not below minValue
-	                                   simParams->colorAttractions[i][j] = std::max(simParams->colorAttractions[i][j] - 0.1f, minValue);
-	                               }
-	                           }
-	                ImGui::PopStyleColor(1);
+				// Check for mouse clicks on the button
+				if (ImGui::IsItemHovered()) {
+				   if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+					   // Left click - increase value, but not above maxValue
+					   simParams->colorAttractions[i][j] = std::min(simParams->colorAttractions[i][j] + 0.1f, maxValue);
+				   }
+				   if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+					   // Right click - decrease value, but not below minValue
+					   simParams->colorAttractions[i][j] = std::max(simParams->colorAttractions[i][j] - 0.1f, minValue);
+				   }
+				}
+				ImGui::PopStyleColor(1);
 
-	                if (j < simParams->colorAttractions[i].size() - 1) ImGui::SameLine();
-	            }
-	        }
+				if (j < simParams->colorAttractions[i].size() - 1) ImGui::SameLine();
+			}
+		}
 
-	        // Add a button for resetting values
-		   if (ImGui::Button("Reset All Attractions")) {
-			   for (auto& row : simParams->colorAttractions) {
-				   std::fill(row.begin(), row.end(), 0.0f); // Set all values in the row to zero
-			   }
+		// Add a button for resetting values
+		if (ImGui::Button("Reset All Attractions")) {
+		   for (auto& row : simParams->colorAttractions) {
+			   std::fill(row.begin(), row.end(), 0.0f); // Set all values in the row to zero
 		   }
-	        ImGui::End();
+		}
+
+		if (ImGui::Button("Randomize All Attractions")) {
+		   handleRandomizeButtonPress(simParams); // Example function call
+		}
+
+		if (ImGui::Button("Randomize Positions")) {
+		   randomPressed = true;
+		}
+	    ImGui::End();
 
 	    // Rendering
 	    ImGui::Render();
