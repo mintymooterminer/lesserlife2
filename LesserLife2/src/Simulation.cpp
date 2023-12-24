@@ -24,7 +24,7 @@ Simulation::Simulation(int width, int height, SimulationParameters* params, Poin
 */
 
 	std::random_device rd;
-	std::mt19937 gen(rd());
+		std::mt19937 gen(rd());
     std::uniform_int_distribution<int> posxDist(0, area_w);
     std::uniform_int_distribution<int> posyDist(0, area_h);
     std::uniform_int_distribution<int> velDist(-1000, 1000);
@@ -61,7 +61,7 @@ Simulation::Simulation(int width, int height, SimulationParameters* params, Poin
     pointRenderer.optimisePoints(points);
     // Assume `points` is a std::vector<Point> containing your points
     for (auto& point : points) {
-        grid->addPointToInitialCell(point, cellSizeX, cellSizeY, -ax, -ay);
+        grid->addPointToInitialCell(point, cellSizeX, cellSizeY, (int)-ax, (int)-ay);
     }
 
    //configureChasingBehavior(numColors);
@@ -120,6 +120,81 @@ void Simulation::run() {
     }
 }
 
+//This method will check to see if things have changed and if so, apply the new parameters, maybe recreate the points array
+//IDeally this will see if the numberOfPOint has gone down and remove some points to meet the new parameter
+//if more or required they will be added
+void Simulation::applyNewParameters(){
+	std::uniform_int_distribution<> colorDist(0, simParams->numColors - 1);
+
+	    if (simParams->numberOfPoints > points.size()) {
+	    	std::uniform_int_distribution<> posxDist(0, area_w- 1);
+	    	std::uniform_int_distribution<> posyDist(0, area_h - 1);
+
+	    	std::random_device rd;
+	    	std::mt19937 gen(rd());
+
+	    	while (points.size() < simParams->numberOfPoints) {
+	            int colorIndex = colorDist(gen);
+	            int xPos = posxDist(gen);
+	            int yPos = posyDist(gen);
+	            int velocityX = 0; // Replace with actual velocity if needed
+	            int velocityY = 0; // Replace with actual velocity if needed
+	            Point newPoint = Point(colorIndex, xPos, yPos, velocityX, velocityY, simParams->pointSize, 1.0);
+
+			   // Add the point to the vector
+			   points.emplace_back(newPoint);
+			   pointRenderer.optimisePoints(points);
+			   // Add the point to the grid system
+			   grid->addPointToInitialCell(newPoint, cellSizeX, cellSizeY, -ax, -ay);
+	        }
+	    } else if (simParams->numberOfPoints < points.size()) {
+	        points.erase(points.begin() + simParams->numberOfPoints, points.end());
+	    }
+
+
+	if(simParams->numColors != simParams->colorAttractions.size()){
+		applyColorChanges();
+	}
+}
+
+void Simulation::applyColorChanges() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> velDist(-1000, 1000);
+
+    // Resize colorAttractions if it's smaller than numColors
+    if (simParams->colorAttractions.size() < simParams->numColors) {
+        simParams->colorAttractions.resize(simParams->numColors);
+        for (int i = 0; i < simParams->numColors; ++i) {
+            // Resize inner vectors only if needed and assign random values to new elements
+            if (simParams->colorAttractions[i].size() < simParams->numColors) {
+                size_t oldSize = simParams->colorAttractions[i].size();
+                simParams->colorAttractions[i].resize(simParams->numColors);
+                for (size_t j = oldSize; j < simParams->colorAttractions[i].size(); ++j) {
+                    simParams->colorAttractions[i][j] = 0;//velDist(gen) / 1000.0 * 0.1255;
+                }
+            }
+        }
+    } else if (simParams->colorAttractions.size() > simParams->numColors) {
+        // If the current size is larger, reduce the size of each vector
+        for (auto& row : simParams->colorAttractions) {
+            row.resize(simParams->numColors);
+        }
+        // Reduce the outer vector size
+        simParams->colorAttractions.resize(simParams->numColors);
+    }
+
+    // Remove points with invalid color index and update numberOfPoints
+    auto newEnd = std::remove_if(points.begin(), points.end(), [this](const Point& p) {
+        return p.color_index >= simParams->numColors;
+    });
+    points.erase(newEnd, points.end());
+
+    // Update numberOfPoints
+    simParams->numberOfPoints = static_cast<int>(points.size());
+}
+
+
 void Simulation::updateEvents() {
 	if(pointRenderer.randomPressed){
 		// If you need to map the mouse coordinates to simulation coordinates, use the mapping methods:
@@ -147,9 +222,14 @@ void Simulation::updateEvents() {
 			points[i].x = xPos;
 			points[i].y = yPos;
 		 }
-
+	} else if (simParams->applyRequired) {
+		applyNewParameters();
+		simParams->applyRequired = false;
 	}
 }
+
+
+
 
 void Simulation::organisePointsInGrid(){
 	// Calculate the number of rows and columns in the grid.
@@ -442,8 +522,6 @@ void Simulation::controlFrameRate(const std::chrono::high_resolution_clock::time
 		}
 	}
 }
-
-
 
 void Simulation::addPointAtMousePosition(int mouseX, int mouseY) {
     // Assuming you have a way to determine the color index for the new point

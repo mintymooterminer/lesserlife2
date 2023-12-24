@@ -20,10 +20,11 @@ struct SimulationParameters {
     int numColors;
     float bounceAmount;
     double min_interact_distance;
-    int size;
+    long unsigned int size;
     double mass;
     int pointSize;
     std::vector<std::vector<float>> colorAttractions;
+    bool applyRequired = false;
 };
 
 class PointRenderer
@@ -210,14 +211,24 @@ public:
 	    if (ImGui::SliderInt("Number of Points", &simParams->numberOfPoints, 1, 5000)) {
 	            // This block is executed when the slider value changes
 	            // You can implement additional logic here if needed
-	    	hasChanged = true;
+	    	//simParams->applyRequired = true;
 		}
 
+	    if (ImGui::SliderInt("Number of Colors", &simParams->numColors, 1, 15)) { // Adjust 'maxColors' as necessary
+	        //applyColorChanges();
+	    	simParams->applyRequired = true;
+	    }
+
+
 		// Check if numberOfPoints has been modified
-		//bool hasChanged = simParams->numberOfPoints != originalNumberOfPoints;
+		hasChanged = simParams->numberOfPoints != originalNumberOfPoints;
+
+		if(hasChanged){
+			simParams->applyRequired = true;
+		}
 
 		// Apply button - only enabled if numberOfPoints has changed
-		if (!hasChanged) {
+		if (!simParams->applyRequired) {
 			ImGui::BeginDisabled();
 		}
 
@@ -226,6 +237,7 @@ public:
 			// For example, update the originalNumberOfPoints
 			//originalNumberOfPoints = simParams->numberOfPoints;
 			// Additional logic for applying the change can go here
+			//simParams->applyRequired = false;
 		}
 
 		if (!hasChanged) {

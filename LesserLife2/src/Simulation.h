@@ -46,7 +46,11 @@ private:
     void renderPoints();
     void controlFrameRate(const std::chrono::high_resolution_clock::time_point& startTime);
     void addPointAtMousePosition(int mouseX, int mouseY);
+    void applyNewParameters();
+    void applyColorChanges();
     void updateEvents();
     double mapMouseXtoSimulationX(int mouseX);
     double mapMouseYtoSimulationY(int mouseY);
+
+
 };
