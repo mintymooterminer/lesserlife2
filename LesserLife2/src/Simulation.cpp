@@ -150,30 +150,19 @@ void Simulation::applyNewParameters(){
 	    } else if (simParams->numberOfPoints < points.size()) {
 	        points.erase(points.begin() + simParams->numberOfPoints, points.end());
 	    }
-
-
 	if(simParams->numColors != simParams->colorAttractions.size()){
 		applyColorChanges();
 	}
 }
 
 void Simulation::applyColorChanges() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> velDist(-1000, 1000);
-
     // Resize colorAttractions if it's smaller than numColors
     if (simParams->colorAttractions.size() < simParams->numColors) {
-        simParams->colorAttractions.resize(simParams->numColors);
+       // simParams->colorAttractions.resize(simParams->numColors);
         for (int i = 0; i < simParams->numColors; ++i) {
-            // Resize inner vectors only if needed and assign random values to new elements
-            if (simParams->colorAttractions[i].size() < simParams->numColors) {
-                size_t oldSize = simParams->colorAttractions[i].size();
-                simParams->colorAttractions[i].resize(simParams->numColors);
-                for (size_t j = oldSize; j < simParams->colorAttractions[i].size(); ++j) {
-                    simParams->colorAttractions[i][j] = 0;//velDist(gen) / 1000.0 * 0.1255;
-                }
-            }
+            // Resize inner vectors only if needed and initialize new elements to 0
+            size_t oldSize = simParams->colorAttractions[i].size();
+            simParams->colorAttractions[i].resize(simParams->numColors, 0.0f); // Initializing new elements to 0
         }
     } else if (simParams->colorAttractions.size() > simParams->numColors) {
         // If the current size is larger, reduce the size of each vector
@@ -185,14 +174,15 @@ void Simulation::applyColorChanges() {
     }
 
     // Remove points with invalid color index and update numberOfPoints
-    auto newEnd = std::remove_if(points.begin(), points.end(), [this](const Point& p) {
-        return p.color_index >= simParams->numColors;
-    });
-    points.erase(newEnd, points.end());
+//   auto newEnd = std::remove_if(points.begin(), points.end(), [this](const Point& p) {
+//        return p.color_index >= simParams->numColors;
+//    });
+//    points.erase(newEnd, points.end());
 
     // Update numberOfPoints
     simParams->numberOfPoints = static_cast<int>(points.size());
 }
+
 
 
 void Simulation::updateEvents() {

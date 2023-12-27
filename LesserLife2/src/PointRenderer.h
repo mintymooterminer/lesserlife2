@@ -19,7 +19,7 @@ struct SimulationParameters {
     float beta;
     int numColors;
     float bounceAmount;
-    double min_interact_distance;
+    float min_interact_distance;
     long unsigned int size;
     double mass;
     int pointSize;
@@ -294,6 +294,8 @@ public:
 	    ImGui::SliderFloat("Friction", &simParams->frictionFactor, 0.0, 1.0);
 	    //float soften;
 	    ImGui::SliderFloat("Amplify", &simParams->amplify, -1000, 1000);
+	    ImGui::SliderFloat("min_interact_distance", &simParams->min_interact_distance, 10, 1000);
+
 	    //float timeStep;
 	    ImGui::SliderFloat("Beta", &simParams->beta, -1.0, 1.0);
 	    //int numColors;
@@ -306,15 +308,15 @@ public:
 	    ImGui::SliderFloat("Soften", &simParams->soften, -10.0, 10.0);
 	    int originalNumberOfPoints = simParams->numberOfPoints;
 	    bool hasChanged = false;
-	    if (ImGui::SliderInt("Number of Points", &simParams->numberOfPoints, 1, 15000)) {
+	    if (ImGui::SliderInt("Number of Points", &simParams->numberOfPoints, 1, 10000)) {
 	            // This block is executed when the slider value changes
 	            // You can implement additional logic here if needed
-	    	//simParams->applyRequired = true;
+	    	simParams->applyRequired = true;
 		}
 
 	    if (ImGui::SliderInt("Number of Colors", &simParams->numColors, 1, 15)) { // Adjust 'maxColors' as necessary
 	        //applyColorChanges();
-	    	simParams->applyRequired = true;
+	    	//simParams->applyRequired = true;
 	    }
 
 
@@ -361,7 +363,7 @@ public:
 		ImVec4 colorZero = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);     // Black
 
 		const ImVec2 buttonSize = ImVec2(20.0f, 20.0f); // Adjust size as needed
-
+if(true){
 		for (size_t i = 0; i < simParams->colorAttractions.size(); ++i) {
 			for (size_t j = 0; j < simParams->colorAttractions[i].size(); ++j) {
 				float value = simParams->colorAttractions[i][j];
@@ -400,7 +402,7 @@ public:
 				if (j < simParams->colorAttractions[i].size() - 1) ImGui::SameLine();
 			}
 		}
-
+}
 		// Add a button for resetting values
 		if (ImGui::Button("Reset All Attractions")) {
 		   for (auto& row : simParams->colorAttractions) {

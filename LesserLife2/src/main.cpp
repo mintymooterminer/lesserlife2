@@ -17,12 +17,12 @@ int main()
 	params.amplify = 100.0;
 	params.timeStep = 0.0015555125425491;
 	params.beta = 0.541814362515;
-	params.numColors = 4;
+	params.numColors = 8;
 	params.bounceAmount = 0.999599998495;
 	params.min_interact_distance = 80;
-	params.size = 4;
+	params.size = 8;
 	params.mass = 4.5;
-	params.pointSize = 4;
+	params.pointSize = 2;
 
     PointRenderer pointRenderer(params.screenWidth, params.screenHeight, &params);
 
