@@ -8,19 +8,19 @@ int main()
 	params.numberOfPoints = 1000;
 	params.screenWidth = 1366;
 	params.screenHeight = 768;
-	params.gridFactor = 32;
+	params.gridFactor = 16;
 	params.game_area_size_factor =4;
 	params.numberOfPoints = 4500;
 	params.gridFactor = 32;
 	params.frictionFactor = 0.89090998509950749950;
-	params.soften = -2.0;
+	params.soften = 0.3;
 	params.amplify = 100.0;
 	params.timeStep = 0.0015555125425491;
 	params.beta = 0.541814362515;
 	params.numColors = 8;
 	params.bounceAmount = 0.999599998495;
 	params.min_interact_distance = 80;
-	params.size = 8;
+	//params.size = 8;
 	params.mass = 4.5;
 	params.pointSize = 2;
 

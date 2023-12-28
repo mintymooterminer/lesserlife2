@@ -10,7 +10,7 @@ Simulation::Simulation(int width, int height, SimulationParameters* params, Poin
 	frameCounter = 0;
 	area_w = screenWidth*simParams->game_area_size_factor;
 	area_h = screenHeight*simParams->game_area_size_factor;
-	simParams->size = simParams->size / simParams->game_area_size_factor;
+	//simParams->size = simParams->size / simParams->game_area_size_factor;
 
 	ax = -area_w/2;
 	bx = area_w/2;
@@ -395,25 +395,11 @@ void Simulation::handleInteraction(Point& point, Point& otherPoint) {
     if (dy > by){dy -= (by - ay);}
     else if (dy < ay){dy += (by - ay);}
 
-/*
-	float dx = otherPoint.x - point.x;
-	float dy = otherPoint.y - point.y;
-
-	// Handle wrap-around for x coordinate
-	if (std::abs(dx) > (bx - ax) / 2) {
-	    dx = (dx > 0) ? dx - (bx - ax) : dx + (bx - ax);
-	}
-
-	// Handle wrap-around for y coordinate
-	if (std::abs(dy) > (by - ay) / 2) {
-	    dy = (dy > 0) ? dy - (by - ay) : dy + (by - ay);
-	}
-*/
     // Calculate the distance using the wrapped coordinates
     float distance = dx * dx + dy * dy;
 
-float tempDistance = distance;
-    	distance = std::sqrt(distance);
+  //  float tempDistance = distance;
+    distance = std::sqrt(distance);
     if (distance < simParams->min_interact_distance) {
 
         // Calculate the overlap and push distance
@@ -454,9 +440,9 @@ float tempDistance = distance;
         //float magnitude = amplify *(attraction / (distance - 1.0)); // Soften the effect
 
 		///but wait, if the particles are really close - we want them to push each other away:
-		//if(distance < point.size*2){
-		//	magnitude = attraction * (1 - abs(2 * distance - 1 - 0.3) / (1 - 0.3));
-		//}
+		if(distance < point.size*2){
+			magnitude = attraction * (1 - abs(2 * distance - 1 - simParams->soften) / (1 - simParams->soften));
+		}
 
 		if(magnitude > 1) magnitude = 1;
 		if(magnitude < -1) magnitude = -1;

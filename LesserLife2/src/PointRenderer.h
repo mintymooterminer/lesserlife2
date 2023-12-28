@@ -20,7 +20,7 @@ struct SimulationParameters {
     int numColors;
     float bounceAmount;
     float min_interact_distance;
-    long unsigned int size;
+    //long unsigned int size;
     double mass;
     int pointSize;
     std::vector<std::vector<float>> colorAttractions;
@@ -305,10 +305,10 @@ public:
 	    //int size;
 	    //double mass;
 	    //int pointSize;
-	    ImGui::SliderFloat("Soften", &simParams->soften, -10.0, 10.0);
+	    ImGui::SliderFloat("Soften", &simParams->soften, -1.0, 1.0, "%0.2f");
 	    int originalNumberOfPoints = simParams->numberOfPoints;
 	    bool hasChanged = false;
-	    if (ImGui::SliderInt("Number of Points", &simParams->numberOfPoints, 1, 10000)) {
+	    if (ImGui::SliderInt("Number of Points", &simParams->numberOfPoints, 1, 8000)) {
 	            // This block is executed when the slider value changes
 	            // You can implement additional logic here if needed
 	    	simParams->applyRequired = true;
