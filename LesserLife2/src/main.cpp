@@ -9,9 +9,9 @@ int main()
 	params.screenWidth = 1366;
 	params.screenHeight = 768;
 	params.gridFactor = 16;
-	params.game_area_size_factor =4;
+	params.game_area_size_factor =32;
 	params.numberOfPoints = 4500;
-	params.gridFactor = 32;
+	params.gridFactor = 128;
 	params.frictionFactor = 0.89090998509950749950;
 	params.soften = 0.3;
 	params.amplify = 100.0;
@@ -20,9 +20,11 @@ int main()
 	params.numColors = 8;
 	params.bounceAmount = 0.999599998495;
 	params.min_interact_distance = 80;
+	params.min_interact_distance_squared = params.min_interact_distance*params.min_interact_distance;
 	//params.size = 8;
-	params.mass = 4.5;
-	params.pointSize = 2;
+	params.mass = 99.5;
+	params.pointSize = 4;
+	params.paletteIndex = 1;
 
     PointRenderer pointRenderer(params.screenWidth, params.screenHeight, &params);
 

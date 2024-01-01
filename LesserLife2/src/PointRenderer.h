@@ -20,6 +20,7 @@ struct SimulationParameters {
     int numColors;
     float bounceAmount;
     float min_interact_distance;
+    float min_interact_distance_squared;
     //long unsigned int size;
     double mass;
     int pointSize;
